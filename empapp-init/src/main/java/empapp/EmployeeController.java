@@ -1,5 +1,6 @@
 package empapp;
 
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -26,6 +27,7 @@ public class EmployeeController {
 
     @PostMapping // nem idempotens
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(description = "creates an employee")
     public EmployeeDto createEmployee(@RequestBody CreateEmployeeCommand command) {
         return employeeService.createEmployee(command);
     }
