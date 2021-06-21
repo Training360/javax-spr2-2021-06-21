@@ -29,7 +29,7 @@ public class EmployeeController {
         return employeeService.createEmployee(command);
     }
 
-    @PostMapping("/{id}")
+    @PutMapping("/{id}")
     public EmployeeDto updateEmployee(@PathVariable("id") long id, @RequestBody UpdateEmployeeCommand command) {
         return employeeService.updateEmployee(id, command);
     }
