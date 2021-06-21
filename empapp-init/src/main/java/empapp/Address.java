@@ -5,8 +5,8 @@ import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 
-@Data
 @Entity
+@Data
 @NoArgsConstructor
 public class Address {
 

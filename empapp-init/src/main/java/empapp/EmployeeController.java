@@ -1,18 +1,18 @@
 package empapp;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/employees")
+@AllArgsConstructor
 public class EmployeeController {
 
     private EmployeeService employeeService;
-
-    public EmployeeController(EmployeeService employeeService) {
-        this.employeeService = employeeService;
-    }
 
     @GetMapping
     public List<EmployeeDto> employees() {
@@ -24,18 +24,21 @@ public class EmployeeController {
         return employeeService.findEmployeeById(id);
     }
 
-    @PostMapping
+    @PostMapping // nem idempotens
+    @ResponseStatus(HttpStatus.CREATED)
     public EmployeeDto createEmployee(@RequestBody CreateEmployeeCommand command) {
         return employeeService.createEmployee(command);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/{id}") // idempotens
     public EmployeeDto updateEmployee(@PathVariable("id") long id, @RequestBody UpdateEmployeeCommand command) {
         return employeeService.updateEmployee(id, command);
     }
 
     @DeleteMapping("/{id}")
-    public EmployeeDto deleteEmployee(@PathVariable("id") long id) {
-        return employeeService.deleteEmployee(id);
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteEmployee(@PathVariable("id") long id) {
+        employeeService.deleteEmployee(id);
     }
+
 }
