@@ -1,1 +1,5 @@
-# JAVAX-SPR - Haladó Spring keretrendszer eszközök
+# JAVAX-SPR - HaladÃ³ Spring keretrendszer eszkÃ¶zÃ¶k
+
+```shell
+docker run --name employees-postgres -e POSTGRES_PASSWORD=password -d -p 5432:5432 postgres
+```
