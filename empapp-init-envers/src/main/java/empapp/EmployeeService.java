@@ -51,4 +51,12 @@ public class EmployeeService {
                 .orElseThrow(() -> new NotFoundException("Employee not found with id: " + id));
         employeeRepository.delete(employee);
     }
+
+    @Transactional(readOnly =  true)
+    public List<EmployeeDto> listHistoryById(long id) {
+        ModelMapper modelMapper = new ModelMapper();
+        return employeeRepository.listHistoryById(id).stream()
+                .map(e -> e == null ? new EmployeeDto("DELETED") : modelMapper.map(e, EmployeeDto.class))
+                .collect(Collectors.toList());
+    }
 }

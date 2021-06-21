@@ -16,4 +16,8 @@ public class EmployeeDto {
     private String name;
 
     private List<AddressDto> addresses;
+
+    public EmployeeDto(String name) {
+        this.name = name;
+    }
 }

@@ -25,6 +25,12 @@ public class EmployeeController {
         return employeeService.findEmployeeById(id);
     }
 
+    @GetMapping("/{id}/history")
+    public List<EmployeeDto> findEmployeeHistoryById(@PathVariable("id") long id) {
+        return employeeService.listHistoryById(id);
+    }
+
+
     @PostMapping // nem idempotens
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(description = "creates an employee")

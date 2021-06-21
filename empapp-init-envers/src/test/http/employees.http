@@ -28,3 +28,8 @@ Content-Type: application/json
 ### Delete
 
 DELETE http://localhost:8080/api/employees/24
+
+### History
+
+GET http://localhost:8080/api/employees/24/history
+Accept: application/json
