@@ -3,7 +3,7 @@ Accept: application/json
 
 ###
 
-GET http://localhost:8080/api/employees/4
+GET http://localhost:8080/api/employees/1
 Accept: application/json
 
 
@@ -28,3 +28,39 @@ Content-Type: application/json
 ### Delete
 
 DELETE http://localhost:8080/api/employees/4
+
+### Actuator
+
+GET http://localhost:8080/actuator
+
+### Health
+
+GET http://localhost:8080/actuator/health
+
+### Info
+
+GET http://localhost:8080/actuator/info
+
+### Metrics
+
+GET http://localhost:8080/actuator/metrics
+
+###
+
+GET http://localhost:8080/actuator/metrics/jvm.memory.used
+
+###
+
+GET http://localhost:8080/actuator/metrics/http.server.requests
+
+###
+
+GET http://localhost:8080/actuator/metrics/jdbc.connections.idle
+
+###
+
+GET http://localhost:8080/actuator/metrics/cache.puts
+
+###
+
+GET http://localhost:8080/actuator/metrics/cache.gets?tag=name:employee
