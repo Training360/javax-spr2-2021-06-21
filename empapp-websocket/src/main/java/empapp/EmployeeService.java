@@ -2,6 +2,8 @@ package empapp;
 
 import lombok.AllArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +16,8 @@ public class EmployeeService {
 
     private EmployeeRepository employeeRepository;
 
+    private ApplicationEventPublisher publisher;
+
     public EmployeeDto createEmployee(CreateEmployeeCommand command) {
         Employee employee = new Employee(command.getName());
         ModelMapper modelMapper = new ModelMapper();
@@ -21,6 +25,9 @@ public class EmployeeService {
             employee.addAddresses(command.getAddresses().stream().map(a -> modelMapper.map(a, Address.class)).collect(Collectors.toList()));
         }
         employeeRepository.save(employee);
+
+        publisher.publishEvent(new EmployeeHasCreatedEvent(this,"Employee " + employee.getName() + " has been created."));
+
         return modelMapper.map(employee, EmployeeDto.class);
     }
 
@@ -50,5 +57,10 @@ public class EmployeeService {
         Employee employee = employeeRepository.findByIdWithAddresses(id)
                 .orElseThrow(() -> new NotFoundException("Employee not found with id: " + id));
         employeeRepository.delete(employee);
+    }
+
+    @Scheduled(fixedRate = 5000)
+    public void createEvent() {
+        publisher.publishEvent(new EmployeeHasCreatedEvent(this, "Dummy event"));
     }
 }
