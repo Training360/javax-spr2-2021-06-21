@@ -3,10 +3,13 @@ package empapp;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/employees")
@@ -21,8 +24,14 @@ public class EmployeeController {
     }
 
     @GetMapping("/{id}")
-    public EmployeeDto findEmployeeById(@PathVariable("id") long id) {
-        return employeeService.findEmployeeById(id);
+    public ResponseEntity<EmployeeDto> findEmployeeById(@PathVariable("id") long id) {
+        EmployeeDto employee = employeeService.findEmployeeById(id);
+        return ResponseEntity
+                .ok()
+                .cacheControl(CacheControl.maxAge(5, TimeUnit.MINUTES))
+//                .eTag(Integer.toString(employee.hashCode()))
+                .eTag(Integer.toString(employee.getVersion()))
+                .body(employee);
     }
 
     @PostMapping // nem idempotens

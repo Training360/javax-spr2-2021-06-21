@@ -3,7 +3,13 @@ Accept: application/json
 
 ###
 
-GET http://localhost:8080/api/employees/300
+GET http://localhost:8080/api/employees/1
+Accept: application/json
+
+###
+
+GET http://localhost:8080/api/employees/1
+If-none-match: "1"
 Accept: application/json
 
 
@@ -18,7 +24,7 @@ Content-Type: application/json
 
 ### Update
 
-PUT http://localhost:8080/api/employees/9
+PUT http://localhost:8080/api/employees/1
 Content-Type: application/json
 
 {
