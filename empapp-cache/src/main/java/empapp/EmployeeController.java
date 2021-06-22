@@ -10,10 +10,15 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/employees")
-@AllArgsConstructor
+//@AllArgsConstructor
+@Slf4j
 public class EmployeeController {
 
     private EmployeeService employeeService;
+
+    public EmployeeController(EmployeeService employeeService) {
+        this.employeeService = employeeService;
+    }
 
     @GetMapping
     public List<EmployeeDto> employees() {
@@ -22,6 +27,7 @@ public class EmployeeController {
 
     @GetMapping("/{id}")
     public EmployeeDto findEmployeeById(@PathVariable("id") long id) {
+        log.info("Class of the employeeservice: " + employeeService.getClass().getName());
         return employeeService.findEmployeeById(id);
     }
 

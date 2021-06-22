@@ -3,7 +3,7 @@ Accept: application/json
 
 ###
 
-GET http://localhost:8080/api/employees/300
+GET http://localhost:8080/api/employees/4
 Accept: application/json
 
 
@@ -18,13 +18,13 @@ Content-Type: application/json
 
 ### Update
 
-PUT http://localhost:8080/api/employees/9
+PUT http://localhost:8080/api/employees/4
 Content-Type: application/json
 
 {
-  "name": "Jane Doe 2"
+  "name": "Jane Doe XXX"
 }
 
 ### Delete
 
-DELETE http://localhost:8080/api/employees/9
+DELETE http://localhost:8080/api/employees/4
