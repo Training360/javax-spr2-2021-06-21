@@ -150,7 +150,7 @@ public class Employee {
 
 ## Kapcsolódó entitások
 
-```
+```plaintext
 Caused by: org.hibernate.MappingException: An audited relation
 from empapp.Employee.addresses to a not audited entity empapp.Address!
 ```
@@ -175,7 +175,7 @@ from empapp.Employee.addresses to a not audited entity empapp.Address!
 ```java
 AuditReader reader = AuditReaderFactory.get(em);
 List<Number> revisionNumbers = reader.getRevisions(Employee.class, id);
-List<Employeeo> employeeHistory = revisionNumbers.stream()
+List<Employee> employeeHistory = revisionNumbers.stream()
         .map(rev -> reader.find(Employee.class, id, rev))
         .collect(Collectors.toList());
 ```
@@ -192,19 +192,15 @@ List<Object[]> result = reader.createQuery()
   .add(AuditEntity.id().eq(id)).getResultList();
 ```
 
-* `forRevisionsOfEntity`
+* `forRevisionsOfEntity` paraméterezése
     * `selectEntitiesOnly`, `false` esetén három elemű tömb, ellenkező esetben az entitások verziói
-    * `selectDeletedEntities`, `true` esetén a törölt entitásokat is visszaadja
-
----
-
-## Query eredménye <br /> `selectEntitiesOnly` `false` esetén
-
 ```java
 Employee employee = (Employee) row[0];
 DefaultRevisionEntity revision = (DefaultRevisionEntity) row[1];        
 RevisionType type = (RevisionType) row[2];
 ```
+
+    * `selectDeletedEntities`, `true` esetén a törölt entitásokat is visszaadja
 
 ---
 
@@ -333,7 +329,7 @@ public class CustomAsyncExceptionHandler
 
         System.out.println("Exception message - " + throwable.getMessage());
         System.out.println("Method name - " + method.getName());
-        for (Object param : obj) {
+        for (Object param: obj) {
             System.out.println("Parameter value - " + param);
         }
     }
@@ -601,6 +597,15 @@ public EmployeeDto updateEmployee(long id, UpdateEmployeeCommand command) {
 * `@CacheEvict` csak a kulccsal megadott értéket törli
 * `@CachePut` mindig megtörténik a hívás, a visszatérési értéket azonnal elhelyezi a cache-ben
 
+Visszatérési érték is hivatkozható a `result`-tal:
+
+```java
+@CachePut(value = "employee", key = "#result.id")
+public EmployeeDto createEmployee(CreateEmployeeCommand command) {
+  // ...
+}
+```
+
 ---
 
 ## Több annotáció használata
@@ -688,7 +693,7 @@ public void evictSingleCacheValue(String cacheName, String cacheKey) {
 
 * Az `application.properties` állományban:
 
-```
+```properties
 spring.cache.jcache.config=classpath:ehcache.xml
 ```
 
@@ -742,14 +747,14 @@ public class CacheEventLogger implements CacheEventListener<Object, Object> {
 
 * Az `application.properties` állományban:
 
-```
+```properties
 management.endpoint.metrics.enabled=true
 management.endpoints.web.exposure.include=info,health,metrics
 ```
 
 ---
 
-## Aktuátor lekérdezések
+## Actuator lekérdezések
 
 * `http://localhost:8080/actuator/metrics`
     * `cache.puts`, `cache.evictions`, `cache.gets`, `cache.removals`
@@ -776,7 +781,7 @@ class: inverse, center, middle
 
 * `max-age` érték, meddig tárolható lokálisan
 * `no-store` nem cache-elhető tartalom
-* `no-cache` cache-elheti, de minden esetben kérdezze meg a böngészőt, hogy van-e újabb
+* `no-cache` cache-elheti, de minden esetben kérdezze meg a szervert, hogy van-e újabb
 * `private` közbülső eszközök, pl. proxy nem cache-elheti
 
 ---
@@ -822,8 +827,8 @@ class: inverse, center, middle
 
 * Az `application.properties` állományban:
 
-```
-spring.resources.cache.cachecontrol.max-age=3600
+```properties
+spring.web.resources.cache.cachecontrol.max-age=3600
 ```
 
 ---
@@ -832,20 +837,20 @@ spring.resources.cache.cachecontrol.max-age=3600
 
 * Tartalom alapján generál egy hash-t
 
-```
-spring.resources.chain.strategy.content.enabled=true
-spring.resources.chain.strategy.content.paths=/**
+```properties
+spring.web.resources.chain.strategy.content.enabled=true
+spring.web.resources.chain.strategy.content.paths=/**
 ```
 
 ---
 
 ## Verzió feloldása
 
-```xml
-<script th:src="@{/js/app.js}" ></script>
+```html
+<script th:src="@{/js/app.js}"></script>
 ```
 
-```
+```html
 <script src="/js/app-233be329c13ee19e25f2f6ccf84bf98d.js" ></script>
 ```
 
@@ -855,14 +860,14 @@ A `HttpServletResponse.encodeURL()` metódust egészíti ki egy `ResourceUrlEnco
 
 ## Fixed version
 
-```
-spring.resources.chain.strategy.fixed.enabled=true
-spring.resources.chain.strategy.fixed.paths=/**
-spring.resources.chain.strategy.fixed.version=v12
+```properties
+spring.web.resources.chain.strategy.fixed.enabled=true
+spring.web.resources.chain.strategy.fixed.paths=/**
+spring.web.resources.chain.strategy.fixed.version=v12
 ```
 
-```
-<script src="/v12/js/app.js" ></script>
+```html
+<script src="/v12/js/app.js"></script>
 ```
 
 ---
@@ -880,12 +885,12 @@ spring.resources.chain.strategy.fixed.version=v12
 @PropertySource("classpath:git.properties")
 ```
 
-```
+```properties
 spring.resources.chain.strategy.fixed.version=${git.commit.id}
 ```
 
-```xml
-<script src="/4918a4d480def57aad2e07531d06f970632f593a/js/app.js" ></script>
+```html
+<script src="/4918a4d480def57aad2e07531d06f970632f593a/js/app.js"></script>
 ```
 
 ---
@@ -905,7 +910,7 @@ public FilterRegistrationBean<ShallowEtagHeaderFilter> etagFilter(){
 }
 ```
 
-```
+```http
 < ETag: "0233be329c13ee19e25f2f6ccf84bf98d"
 ```
 
@@ -933,11 +938,11 @@ public ResponseEntity<EmployeeDto> findEmployeeById(@PathVariable("id") long id)
 
 ## ETag
 
-```
+```http
 < ETag : "-802699320"
 ```
 
-```
+```http
 > If-none-match : "-802699320"
 
 < HTTP/1.1 304 Not Modified
@@ -1043,6 +1048,12 @@ class: inverse, center, middle
 
 ---
 
+## STOMP architektúra
+
+<img src="images/stomp.png" alt="STOMP" width="600" />
+
+---
+
 ## Spring konfiguráció
 
 ```java
@@ -1068,14 +1079,15 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 ## Spring controller
 
 ```java
-@SendTo("/topic/employees")
 @MessageMapping("/messages")
+@SendTo("/topic/employees")
 public Message sendMessage(MessageCommand command) {
     return new Message("Reply: " + command.getContent());
 }
 ```
 
-`@SubscribeMapping` - csak a feliratkozó üzenetekre kerül meghívásra
+* `@MessageMapping` helyett `@SubscribeMapping` - csak a feliratkozó üzenetekre kerül meghívásra
+* Alapesetben a `/topic/messages` (bejövő destination `/topic` prefix-szel) topicra válaszol, azonban ez felülírható a `@SendTo` annotációval
 
 ---
 
@@ -1293,7 +1305,7 @@ class: inverse, center, middle
 * Nyitott HTTP kapcsolat streamelve (Mime-type: `text/event-stream`)
 * Formátuma:
 
-```
+```plaintext
 event:message
 :Employee has created
 id:253c3eb8-fb59-410c-82b9-d2acfa89a5d5
@@ -1604,7 +1616,7 @@ class: inverse, center, middle
 
 * Egyszerű eset
   * Amikor nincs írás
-  * `GET` metódus esetén vagy `POST` esetén bizonos MIME type-nál
+  * `GET` metódus esetén vagy `POST` esetén bizonyos MIME type-nál
   * A böngésző `Origin` headerben küldi a hivatkozó dokumentum forrásának domainjét
   * A szerver `Access-Control-Allow-Origin` headerben jelzi, honnan megengedett
 * Preflight eset
@@ -2137,7 +2149,7 @@ public class JmsMessageListener {
 
 * `application.properties` állományban, hogy milyen sorokat hozzon létre:
 
-```
+```properties
 spring.artemis.embedded.queues=employeesQueue
 ```
 
