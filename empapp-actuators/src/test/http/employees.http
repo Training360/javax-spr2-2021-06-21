@@ -28,3 +28,27 @@ Content-Type: application/json
 ### Delete
 
 DELETE http://localhost:8080/api/employees/9
+
+### Actuators
+
+http://localhost:8080/actuator
+
+### Health
+
+http://localhost:8080/actuator/health
+
+### Spring Beans
+
+http://localhost:8080/actuator/beans
+
+### Spring
+
+http://localhost:8080/actuator/conditions
+
+###
+
+http://localhost:8080/actuator/mappings
+
+###
+
+http://localhost:8080/actuator/configprops
