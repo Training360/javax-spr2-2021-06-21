@@ -52,3 +52,15 @@ http://localhost:8080/actuator/mappings
 ###
 
 http://localhost:8080/actuator/configprops
+
+###
+
+http://localhost:8080/actuator/httptrace
+
+### Info
+
+http://localhost:8080/actuator/info
+
+###Env
+
+http://localhost:8080/actuator/env
