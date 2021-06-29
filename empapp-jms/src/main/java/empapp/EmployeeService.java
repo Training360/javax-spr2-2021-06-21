@@ -2,6 +2,7 @@ package empapp;
 
 import lombok.AllArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +15,8 @@ public class EmployeeService {
 
     private EmployeeRepository employeeRepository;
 
+    private JmsTemplate jmsTemplate;
+
     public EmployeeDto createEmployee(CreateEmployeeCommand command) {
         Employee employee = new Employee(command.getName());
         ModelMapper modelMapper = new ModelMapper();
@@ -21,6 +24,9 @@ public class EmployeeService {
             employee.addAddresses(command.getAddresses().stream().map(a -> modelMapper.map(a, Address.class)).collect(Collectors.toList()));
         }
         employeeRepository.save(employee);
+
+        jmsTemplate.convertAndSend(new EmployeeHasBeenCreatedDto("Employee has been created: " + command.getName()));
+
         return modelMapper.map(employee, EmployeeDto.class);
     }
 
