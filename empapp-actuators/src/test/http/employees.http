@@ -64,3 +64,28 @@ http://localhost:8080/actuator/info
 ###Env
 
 http://localhost:8080/actuator/env
+
+### Naplózás
+
+GET http://localhost:8080/actuator/loggers/empapp
+
+### Módosítás
+
+POST http://localhost:8080/actuator/loggers/empapp
+Content-Type: application/json
+
+{
+  "configuredLevel": "DEBUG"
+}
+
+### Metrics
+
+GET http://localhost:8080/actuator/metrics
+
+### Metrics
+
+GET http://localhost:8080/actuator/metrics/employee_created
+
+### Audit
+
+GET http://localhost:8080/actuator/auditevents
