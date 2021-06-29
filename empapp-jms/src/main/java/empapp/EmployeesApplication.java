@@ -12,27 +12,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 @SpringBootApplication
-@Configuration
 public class EmployeesApplication
 {
 
 	public static void main(String[] args) {
 		SpringApplication.run(EmployeesApplication.class, args);
-	}
-
-	@Bean
-	public MessageConverter messageConverter(ObjectMapper objectMapper){
-		MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();
-		converter.setTypeIdPropertyName("_typeId");
-		// _typeId=empapp.EmployeeHasBeenCreatedDto
-
-
-		Map<String, Class<?>> mappings = new HashMap<>();
-		mappings.put("created", EmployeeHasBeenCreatedDto.class);
-		converter.setTypeIdMappings(mappings);
-		// _typeId=created
-
-		return converter;
 	}
 
 }

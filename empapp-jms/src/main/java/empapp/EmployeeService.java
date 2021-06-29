@@ -15,7 +15,7 @@ public class EmployeeService {
 
     private EmployeeRepository employeeRepository;
 
-    private JmsTemplate jmsTemplate;
+    private JmsGateway jmsGateway;
 
     public EmployeeDto createEmployee(CreateEmployeeCommand command) {
         Employee employee = new Employee(command.getName());
@@ -25,7 +25,7 @@ public class EmployeeService {
         }
         employeeRepository.save(employee);
 
-        jmsTemplate.convertAndSend(new EmployeeHasBeenCreatedDto("Employee has been created: " + command.getName()));
+        jmsGateway.sendMessage(command.getName());
 
         return modelMapper.map(employee, EmployeeDto.class);
     }
