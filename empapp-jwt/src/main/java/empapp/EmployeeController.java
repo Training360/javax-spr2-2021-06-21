@@ -6,17 +6,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/employees")
 @AllArgsConstructor
+@Slf4j
 public class EmployeeController {
 
     private EmployeeService employeeService;
 
     @GetMapping
-    public List<EmployeeDto> employees() {
+    public List<EmployeeDto> employees(Principal principal) {
+        log.info("Logged in user: {}", principal.getName());
         return employeeService.listEmployees();
     }
 
