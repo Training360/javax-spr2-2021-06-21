@@ -1373,7 +1373,7 @@ class: inverse, center, middle
 
 ## SSE JAX-RS kliens
 
-
+.small-code-14[
 ```java
 Client client = ClientBuilder.newClient();
 WebTarget target = client.target("http://localhost:8080/api/employees/messages");
@@ -1382,15 +1382,21 @@ try (SseEventSource source = SseEventSource.target(target)
 
         .build()) {
     source.register(
-            // JSON unmarshal
             inboundSseEvent -> System.out.println(inboundSseEvent.readData(Message.class)),
             t -> {throw new IllegalStateException("Error processing sse", t);},
             () -> System.out.println("Closing..."));
     source.open();
+    
+    // Várakozni!!!
 }
+client.close();
 ```
+]
 
-Paraméterek: `onEvent`, `onError`, `onComplete`
+* A `register()` metódus paraméterei: `onEvent`, `onError`, `onComplete`
+* try-with-resource-on belül várakozni kell, mert a finally ilyenkor lezárja kommunikációt
+* Szerver oldalról nem lehet megszakítani a kapcsolatot, mert a kliens újra fog próbálkozni: le kell programozni, hogy milyen üzenet hatására zárja le a kommunikációt
+* Ha nincs `client.close()`, nem lép ki
 
 ---
 
@@ -1455,6 +1461,7 @@ class: inverse, center, middle
 * Önleíró API
 * Kapcsolódó erőforrásokra linkek
 * [Hypertext Application Language](https://en.wikipedia.org/wiki/Hypertext_Application_Language)
+* [Richardson Maturity Model](https://martinfowler.com/articles/richardsonMaturityModel.html)
 
 ```javascript
 {
@@ -1623,6 +1630,8 @@ class: inverse, center, middle
   * A böngésző küld egy plusz megelőző kérést `OPTIONS` metódussal
   * Ha a böngésző válaszában a `Access-Control-Allow-Origin` header megfelelő
   * Újabb, valós kérés
+
+(Chrome nem mutatja meg az `OPTIONS` kérést, míg a Firefox igen)
 
 ---
 
@@ -1872,7 +1881,7 @@ szoftverrendszer
 
 ## WSDL felépítése
 
-![WSDL](images/wsdl.gif)
+<img src="images/wsdl.gif" alt="WSDL" width="400" />
 
 ---
 
@@ -2323,3 +2332,634 @@ jmsTemplate.execute(s -> s.createQueue("replyQueue"));
 * `JMSProducer.setDeliveryDelay()`
 * Erőforrás megtakarítás
 * Időszinkronizálás a szerverek között
+
+---
+
+class: inverse, center, middle
+
+# OAuth 2.0 Keycloak szerverrel
+
+---
+
+## 12Factor hivatkozás: <br /> Authentication and Authorization
+
+* Security-vel az elejétől foglalkozni kell
+* Endpoint védelem
+* Audit naplózás
+* RBAC - role based access controll
+* OAuth2
+
+---
+
+## OAuth 2.0
+
+* Nyílt szabány erőforrás-hozzáférés kezelésére
+* Elválik, hogy a felhasználó mit is akar igénybe venni, <br /> és az, hogy hol jelentkezik be
+* Google, Facebook vagy saját szerver
+* Szereplők
+  * Resource owner: aki hozzáfér az erőforráshoz, a szolgáltatáshoz, <br /> humán esetben a felhasználó (de lehet alkalmazás is)
+  * Client: a szoftver, ami hozzá akar férni a <br /> felhasználó adataihoz
+  * Authorization Server: ahol a felhasználó adatai <br /> tárolva vannak, és ahol be tud lépni
+  * Resource Server: ahol a felhasználó igénybe veszi <br /> az erőforrásokat, a szolgáltatást
+
+---
+
+## OAuth 2.0 forgatókönyvek
+
+* Grant Type:
+  * Authorization Code: klasszikus mód, ahogy egy webes alkalmazásba <br /> lépünk Facebook vagy a Google segítségével
+  * Implicit: mobil alkalmazások, vagy csak böngészőben futó alkalmazások <br /> használják
+  * Resource Owner Password Credentials: ezt olyan megbízható <br /> alkalmazások használják, melyek maguk kérik be a jelszót
+  * Client Credentials: ebben az esetben <br /> nem a felhasználó kerül azonosításra, <br /> hanem az alkalmazás önmaga
+
+---
+
+## Authorization Code
+
+* A felhasználó elmegy az alkalmazás oldalára
+* Az átirányít a Authorization Serverre (pl. Google vagy Facebook), <br /> megadva a saját azonosítóját (client id), hogy hozzá szeretne férni <br /> a felhasználó adataihoz
+* Az Authorization Serveren a felhasználó bejelentkezik
+* Az Authorization Serveren a felhasználó jogosultságot ad az alkalmazásnak, <br /> hogy hozzáférjen a felhasználó adataihoz
+* Az Authorization Server visszairányítja a felhasználót <br /> az alkalmazás oldalára, url paraméterként átadva neki <br /> egy úgynevezett authorization code-ot
+* Az alkalmazás a kapott authorization code-ot, <br /> a saját azonosítóját (client id), az alkalmazáshoz <br /> rendelt "jelszót" (client secret) felhasználva lekéri <br />
+az Authorization Servertől a felhasználóhoz tartozó <br /> tokent, mely tartalmazza a felhasználó adatait
+
+---
+
+## Token
+
+<img src="images/jwasterix.png" alt="JW* szabványok" width="600"/>
+
+---
+
+## Keycloak
+
+* Keycloak indítása Dockerben
+
+```shell
+docker run -e KEYCLOAK_USER=root -e KEYCLOAK_PASSWORD=root -p 8081:8080
+  --name keycloak jboss/keycloak
+```
+
+* Létre kell hozni egy Realm-et (`EmployeesRealm`)
+* Létre kell hozni egy klienst, amihez meg kell adni annak azonosítóját, <br /> és hogy milyen url-en érhető el (`employees-app`)
+* Létre kell hozni a szerepköröket (`employees_app_user`)
+* Létre kell hozni egy felhasználót (a _Email Verified_ legyen _On_ értéken, hogy be lehessen vele jelentkezni), beállítani a jelszavát (a _Temporary_ értéke legyen _Off_, hogy ne kelljen jelszót módosítani), <br /> valamint hozzáadni a szerepkört (`johndoe`)
+
+
+---
+
+## Keycloak tesztelés
+
+* Konfiguráció leírása:
+
+.small-code-14[
+```
+http://localhost:8081/auth/realms/EmployeesRealm/.well-known/openid-configuration
+```
+]
+
+* Token lekérése (https://jws.io címen ellenőrizhető)
+
+.small-code-14[
+```shell
+curl -s --data "grant_type=password&client_id=employees-app&username=johndoe&password=johndoe"
+  http://localhost:8081/auth/realms/EmployeesRealm/protocol/openid-connect/token | jq
+```
+]
+
+* A következő címen lekérhető a tanúsítvány
+
+.small-code-14[
+```
+http://localhost:8081/auth/realms/EmployeesRealm/protocol/openid-connect/certs
+```
+]
+
+---
+
+## Keycloak tesztelés Postmanből
+
+Be kell írni egy létező scope-ot (pl. `profile`), mert üreset nem tud értelmezni
+
+<img src="images/keycloak-postman.png" alt="Keycloak tesztelés Postmanből" width="300" />
+
+---
+
+## Spring támogatás
+
+* Spring Security OAuth deprecated
+* Spring Security 5.2 majdnem teljes támogatás
+    * Authorization Server nélkül
+* Külön Keycloak integráció
+
+.small-code-14[
+```xml
+<dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>org.keycloak.bom</groupId>
+      <artifactId>keycloak-adapter-bom</artifactId>
+      <version>14.0.0</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+  </dependencies>
+</dependencyManagement>
+```
+]
+
+.small-code-14[
+```xml
+<dependency>
+  <groupId>org.keycloak</groupId>
+  <artifactId>keycloak-spring-boot-starter</artifactId>
+</dependency>
+```
+]
+
+---
+
+## Konfiguráció
+
+* `application.properties`:
+
+.small-code-14[
+```properties
+keycloak.auth-server-url=http://localhost:8081/auth
+keycloak.realm=Employees
+keycloak.resource=employees-app
+keycloak.public-client=true
+
+keycloak.security-constraints[0].authRoles[0]=employees_app_user
+keycloak.security-constraints[0].securityCollections[0].patterns[0]=/*
+
+keycloak.principal-attribute=preferred_username
+```
+]
+
+---
+
+## Kérés
+
+```plaintext
+GET http://localhost:8080/api/employees
+Accept: application/json
+Authorization: bearer eyJ...
+```
+
+---
+
+## Felhasználónévhez hozzáférés
+
+```java
+@GetMapping
+public List<EmployeeDto> employees(Principal principal) {
+    log.info("Logged in user: {}", principal.getName());
+    return employeeService.listEmployees();
+}
+```
+
+---
+
+class: inverse, center, middle
+
+# Actuator
+
+---
+
+## Actuator
+
+* Monitorozás, beavatkozás és metrikák
+* HTTP és JMX végpontok
+
+---
+
+## Actuator alapok
+
+```xml
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+```
+
+* `http://localhost:8080/actuator` címen elérhető az <br /> enabled és exposed endpontok listája
+* Logban:
+
+```plaintext
+o.s.b.a.e.web.EndpointLinksResolver:
+  Exposing 2 endpoint(s) beneath base path '/actuator'
+```
+
+* További actuator végpontok bekapcsolása: <br /> `management.endpoints.web.exposure.include` <br />konfigurációval
+
+---
+
+## Actuator haladó
+
+* Összes expose: `management.endpoints.web.exposure.include = *`
+* Mind be van kapcsolva, kivéve a shutdown
+
+```properties
+management.endpoint.shutdown.enabled = true
+```
+
+* Saját fejleszthető
+* Biztonságossá kell tenni
+
+---
+
+## Health
+
+```json
+{"status":"UP"}
+```
+
+```properties
+management.endpoint.health.show-details = always
+```
+
+* Létező JDBC DataSource, MongoDB, JMS providers, stb.
+* Saját fejleszthető (`implements HealthIndicator`)
+
+---
+
+## Health details
+
+.small-code-14[
+```json
+{
+  "status": "UP",
+  "components": {
+    "db": {
+      "status": "UP",
+      "details": {
+        "database": "H2",
+        "result": 1,
+        "validationQuery": "SELECT 1"
+      }
+    },
+    "diskSpace": {
+      "status": "UP",
+      "details": {
+        "total": 1000202039296,
+        "free": 680306184192,
+        "threshold": 10485760
+      }
+    },
+    "ping": {
+      "status": "UP"
+    }
+  }
+}
+```
+]
+
+---
+
+## JVM belső működés
+
+* Heap dump: `/heapdump` (bináris állomány)
+* Thread dump: `/threaddump`
+
+---
+
+## Spring belső működés
+
+* Beans: `/beans`
+* Conditions: `/conditions`
+    * Autoconfiguration feltételek teljesültek-e vagy sem - ettől függ, <br /> milyen beanek kerültek létrehozásra
+* HTTP mappings: `/mappings`
+    * HTTP mappings és a hozzá tartozó kiszolgáló metódusok
+* Configuration properties: `/configprops`
+
+---
+
+## Trace
+
+* Ha van `HttpTraceRepository` a classpath-on
+* Fejlesztői környezetben: `InMemoryHttpTraceRepository`
+* Éles környezetben: Zipkin vagy Spring Cloud Sleuth
+* Megjelenik a `/httptrace` endpoint
+
+---
+
+## Kapcsolódó szolgáltatások <br /> és library-k
+
+* `/caches` - Cache
+* `/scheduledtasks` - Ütemezett feladatok
+* `/flyway` - Flyway
+* `/liquibase` - Liquibase
+* `/integrationgraph` - Spring Integration
+* `/sessions` - Spring Session
+* `/jolokia` - Jolokia (JMX http-n keresztül)
+* `/prometheus`
+
+---
+
+## Info
+
+* `info` prefixszel megadott property-k belekerülnek
+
+```properties
+info.appname = employees
+```
+
+```json
+{"appname":"employees"}
+```
+
+---
+
+## Property
+
+* `/env` végpont - property source-ok alapján felsorolva
+* `/env/info.appname` - értéke, látszik, hogy melyik property source-ból jött
+* Spring Cloud Config esetén `POST`-ra módosítani is lehet <br /> (Spring Cloud Config Server használja)
+
+---
+
+## JMX
+
+* `spring.jmx.enabled` hatására management endpointok exportálása MBean-ként
+* Kapcsolódás pl. JConsole-lal
+* JMX over HTTP beállítása Jolokiával
+
+```xml
+<dependency>
+    <groupId>org.jolokia</groupId>
+    <artifactId>jolokia-core</artifactId>
+</dependency>
+```
+
+* JavaScript, Java API
+* Kliens pl. a [Jmx4Perl](https://metacpan.org/pod/jmx4perl)
+* Jmx4Perl Docker konténerben
+
+```shell
+docker run --rm -it jolokia/jmx4perl jmx4perl
+  http://host.docker.internal:8080/actuator/jolokia
+  read java.lang:type=Memory HeapMemoryUsage
+```
+
+---
+
+## 12Factor: Admin processes
+
+* Felügyeleti, üzemeltetési folyamatok
+* Ne ad-hoc szkriptek
+* Alkalmazással együtt kerüljenek verziókezelésre, buildelésre és kiadásra
+* Preferálja a REPL (read–eval–print loop) használatát
+    * Tipikusan command line
+* Megosztó, könnyen el lehet rontani
+
+---
+
+## 12Factor: Admin processes
+
+* Tipikusan máshogy kéne megoldani:
+    * Adatbázis migráció
+    * Ütemezett folyamatok
+    * Egyszer lefutó kódok
+    * Command line-ban elvégezhető feladatok
+* Megoldások:
+    * Flyway, Liquibase
+    * Magas szintű ütemező (pl. Quartz)
+    * REST-en, MQ-n meghívható kódrészek
+    * Új microservice
+
+---
+
+class: inverse, center, middle
+
+# Git információk megjelenítése
+
+---
+
+## Git információk megjelenítése
+
+```xml
+<plugin>
+  <groupId>pl.project13.maven</groupId>
+  <artifactId>git-commit-id-plugin</artifactId>
+</plugin>
+```
+
+A `target/classes` könyvtárban `git.properties` fájl
+
+```json
+{
+  "appname": "employees",
+  "git": {
+    "branch": "master",
+    "commit": {
+      "id": "d63acd0",
+      "time": "2020-02-04T11:12:58Z"
+    }
+  }
+}
+```
+
+---
+
+## 12Factor: One Codebase, <br /> One Application
+
+* A különböző környezetekre telepített példányoknál alapvető igény, <br />
+  hogy tudjuk, hogy mely verzióból készült (felületen, logban látható legyen)
+
+---
+
+class: inverse, center, middle
+
+# Naplózás
+
+---
+
+## Naplózás lekérdezése és beállítása
+
+* `/loggers`
+* `/logfile`
+
+```plaintext
+### Get logger
+GET http://localhost:8080/actuator/loggers/training.employees
+
+### Set logger
+POST http://localhost:8080/actuator/loggers/training.employees
+Content-Type: application/json
+
+{
+  "configuredLevel": "INFO"
+}
+```
+
+---
+
+class: inverse, center, middle
+
+# Metrics
+
+---
+
+## Metrics
+
+* `/metrics` végponton
+* [Micrometer](https://micrometer.io/) - application metrics facade (mint az SLF4J a naplózáshoz)
+* Több, mint 15 monitoring eszközhöz való csatlakozás <br /> (Elastic, Ganglia, Graphite, New Relic, Prometheus, stb.)
+
+---
+
+## Gyűjtött értékek
+
+* JVM
+    * Memória
+    * GC
+    * Szálak
+    * Betöltött osztályok
+* CPU
+* File descriptors
+* Uptime
+* Tomcat (`server.tomcat.mbeanregistry.enabled` <br /> értéke legyen `true`)
+* Library-k: Spring MVC, WebFlux, Jersey, HTTP Client, <br /> Cache, DataSource, Hibernate, RabbitMQ
+* Stb.
+
+---
+
+## Saját metrics
+
+```java
+Counter.builder(EMPLOYEES_CREATED_COUNTER_NAME)
+        .baseUnit("employees")
+        .description("Number of created employees")
+        .register(meterRegistry);
+
+meterRegistry.counter(EMPLOYEES_CREATED_COUNTER_NAME).increment();
+```
+
+A `/metrics/employees.created` címen elérhető
+
+---
+
+## 12Factor hivatkozás: Telemetry
+
+* Adatok különböző kategóriákba sorolhatóak:
+  * Application performance monitoring
+  * Domain specifikus értékek
+  * Health, logs
+* Új konténerek születnek és szűnnek meg
+* Központi eszköz
+
+---
+
+class: inverse, center, middle
+
+# Metrics Graphite monitoring eszközzel
+
+---
+
+## Graphite architektúra
+
+* Az alkalmazás tölti fel bizonyos időközönként az adatokat
+
+---
+
+## Graphite indítás
+
+```shell
+docker run
+  -d
+  --name graphite
+  --restart=always
+  -p 80:80 -p 2003-2004:2003-2004 -p 2023-2024:2023-2024
+  -p 8125:8125/udp -p 8126:8126
+  graphiteapp/graphite-statsd
+```
+
+Felhasználó/jelszó: `root`/`root`
+
+---
+
+## Graphite integráció
+
+```xml
+<dependency>
+  <groupId>io.micrometer</groupId>
+  <artifactId>micrometer-registry-graphite</artifactId>
+  <version>${micrometer-registry-graphite.version}</version>
+</dependency>
+```
+
+```properties
+management.metrics.export.graphite.step = 10s
+```
+
+---
+
+class: inverse, center, middle
+
+# Metrics Prometheus monitoring eszközzel
+
+---
+
+## Prometheus architektúra
+
+* Prometheus kérdez le a megadott rendszerességgel
+* yml konfiguráció, `prometheus.yml`
+
+```yaml
+scrape_configs:
+  - job_name: 'spring'
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 20s
+    static_configs:
+      - targets: ['host.docker.internal:8080']
+```
+
+---
+
+## Prometheus indítása
+
+Tegyük fel, hogy a `prometheus.yml` a `D:\data\prometheus` könyvtárban van
+
+```shell
+docker run -p 9090:9090 -v D:\data\prometheus:/etc/prometheus
+  --name prom prom/prometheus
+```
+
+---
+
+## Spring Boot alkalmazás <br /> konfigurálása
+
+* `io.micrometer:micrometer-registry-prometheus` függőség
+* `/actuator/prometheus` endpoint
+
+```xml
+<dependency>
+  <groupId>io.micrometer</groupId>
+  <artifactId>micrometer-registry-prometheus</artifactId>
+  <version>${micrometer-registry-prometheus.version}</version>
+</dependency>
+```
+
+---
+
+class: inverse, center, middle
+
+# Audit events
+
+---
+
+## Audit events
+
+* Pl. bejelentkezéssel kapcsolatos események
+* Saját események vehetőek fel
+* Kell egy `AuditEventRepository` implementáció, <br />beépített: `InMemoryAuditEventRepository`
+* Megjelenik az `/auditevents` endpoint
+
+```java
+applicationEventPublisher.publishEvent(
+  new AuditApplicationEvent("anonymous",
+    "employee_has_been_created",
+      Map.of("name", command.getName())));
+```
